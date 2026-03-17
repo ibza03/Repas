@@ -5,102 +5,102 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Menu Famille</title>
     
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/1046/1046747.png">
-    
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
 
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Outfit', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
-        .ios-card { transition: all 0.2s; }
-        .ios-card:active { transform: scale(0.98); background-color: #f1f5f9; }
+        .ios-card { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .ios-card:active { transform: scale(0.96); background-color: #f1f5f9; }
+        .gradient-text { background: linear-gradient(135deg, #f97316 0%, #3b82f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     </style>
 </head>
-<body class="pb-10 pt-12 px-4">
+<body class="pb-12 pt-8 px-4">
 
     <div class="max-w-md mx-auto">
-        <header class="mb-8 flex justify-between items-end px-2">
+        <header class="mb-8 flex justify-between items-center px-2">
             <div>
-                <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Menu Famille</h1>
-                <p class="text-slate-500 font-medium">Qu'est-ce qu'on mange ? 🍴</p>
+                <h1 class="text-4xl font-black gradient-text">Menu Famille</h1>
+                <p class="text-slate-400 font-medium text-sm">Prêt pour la régalade ? 👨‍👩‍👧</p>
             </div>
-            <div id="sync-indicator" class="mb-2 w-3 h-3 bg-green-500 rounded-full shadow-lg border-2 border-white transition-all duration-300"></div>
+            <div id="status-dot" class="w-3 h-3 bg-slate-200 rounded-full shadow-lg transition-colors duration-500"></div>
         </header>
 
         <div id="app" class="space-y-4">
-            <div class="flex flex-col items-center py-12 text-slate-400 italic">
-                Chargement des menus...
+            <div class="flex flex-col items-center py-20 text-slate-400 animate-pulse">
+                <div class="text-4xl mb-4">🍳</div>
+                <p class="italic">Connexion à la cuisine...</p>
             </div>
         </div>
     </div>
 
     <script>
-        // Ta config
-        const firebaseConfig = { 
-            databaseURL: "https://meal-planner-famille-default-rtdb.europe-west1.firebasedatabase.app" 
-        };
+        // Ta config Firebase
+        var config = { databaseURL: "https://meal-planner-famille-default-rtdb.europe-west1.firebasedatabase.app" };
+        firebase.initializeApp(config);
+        var db = firebase.database();
+        var jours = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
-        // Initialisation
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        const jours = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
-
-        function renderApp(data) {
-            const container = document.getElementById('app');
+        function render(data) {
+            var container = document.getElementById('app');
             container.innerHTML = '';
 
-            jours.forEach(jour => {
-                const menu = (data && data[jour]) ? data[jour] : { midi: "Cliquer pour ajouter", soir: "Cliquer pour ajouter" };
-                const card = document.createElement('div');
-                card.className = "ios-card bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col gap-4";
+            jours.forEach(function(j) {
+                var menu = (data && data[j]) ? data[j] : { midi: "Cliquer pour ajouter", soir: "Cliquer pour ajouter" };
+                var card = document.createElement('div');
+                card.className = "ios-card bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col gap-5";
                 
                 card.innerHTML = `
                     <div class="flex justify-between items-center border-b border-slate-50 pb-2">
-                        <span class="font-bold text-slate-400 text-[11px] uppercase tracking-[0.15em]">${jour}</span>
+                        <span class="font-black text-slate-300 text-[12px] uppercase tracking-widest">${j}</span>
                     </div>
-                    <div class="grid grid-cols-1 gap-4">
-                        <div onclick="editMenu('${jour}', 'midi', '${menu.midi.replace(/'/g, "\\'")}')" class="flex items-start gap-3">
-                            <div class="bg-orange-100 p-2 rounded-xl">☀️</div>
-                            <div>
-                                <p class="text-[10px] font-bold text-slate-400 uppercase leading-none mb-1">Midi</p>
-                                <p class="text-slate-800 font-semibold leading-tight">${menu.midi}</p>
+                    <div class="space-y-6">
+                        <div onclick="upd('${j}','midi','${menu.midi.replace(/'/g, "\\'")}')" class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-orange-100 rounded-2xl flex items-center justify-center text-xl shadow-sm shadow-orange-100">☀️</div>
+                            <div class="flex-1">
+                                <p class="text-[10px] font-bold text-orange-400 uppercase tracking-tighter">Midi</p>
+                                <p class="text-slate-800 font-bold text-lg leading-tight">${menu.midi}</p>
                             </div>
                         </div>
-                        <div onclick="editMenu('${jour}', 'soir', '${menu.soir.replace(/'/g, "\\'")}')" class="flex items-start gap-3">
-                            <div class="bg-indigo-100 p-2 rounded-xl">🌙</div>
-                            <div>
-                                <p class="text-[10px] font-bold text-slate-400 uppercase leading-none mb-1">Soir</p>
-                                <p class="text-slate-800 font-semibold leading-tight">${menu.soir}</p>
+                        <div onclick="upd('${j}','soir','${menu.soir.replace(/'/g, "\\'")}')" class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-indigo-100 rounded-2xl flex items-center justify-center text-xl shadow-sm shadow-indigo-100">🌙</div>
+                            <div class="flex-1">
+                                <p class="text-[10px] font-bold text-indigo-400 uppercase tracking-tighter">Soir</p>
+                                <p class="text-slate-800 font-bold text-lg leading-tight">${menu.soir}</p>
                             </div>
                         </div>
                     </div>
                 `;
                 container.appendChild(card);
             });
+            document.getElementById('status-dot').className = "w-3 h-3 bg-green-500 rounded-full shadow-[0_0_10px_#22c55e]";
         }
 
-        // Fonction d'édition
-        window.editMenu = function(jour, moment, actuelle) {
-            const val = actuelle === "Cliquer pour ajouter" ? "" : actuelle;
-            const rep = prompt("Menu du " + jour + " (" + moment + ") :", val);
-            if (rep !== null) {
-                const finalValue = rep.trim() === "" ? "Cliquer pour ajouter" : rep.trim();
-                db.ref('menus/' + jour + '/' + moment).set(finalValue);
+        window.upd = function(j, m, a) {
+            var def = (a === "Cliquer pour ajouter") ? "" : a;
+            var r = prompt("Menu du " + j + " (" + m + ") :", def);
+            if (r !== null) {
+                db.ref('menus/' + j + '/' + m).set(r.trim() || "Cliquer pour ajouter");
             }
         };
 
-        // Écoute en temps réel
-        db.ref('menus/').on('value', (snapshot) => {
-            const indicator = document.getElementById('sync-indicator');
-            indicator.style.transform = "scale(1.5)";
-            setTimeout(() => indicator.style.transform = "scale(1)", 300);
-            renderApp(snapshot.val());
-        }, (error) => {
-            document.getElementById('app').innerHTML = `<p class='text-red-500 p-4'>Erreur Firebase : ${error.message}. Vérifie que ta base est en mode "Test" (Public).</p>`;
+        // Sync avec gestion d'erreur
+        db.ref('menus/').on('value', function(s) {
+            render(s.val());
+        }, function(err) {
+            document.getElementById('app').innerHTML = `
+                <div class="bg-red-50 p-6 rounded-3xl border border-red-100 text-center">
+                    <p class="text-red-600 font-bold mb-2">Accès refusé par Firebase</p>
+                    <p class="text-red-400 text-sm">Vérifie l'onglet "Règles" dans ta console et mets .read et .write à true.</p>
+                </div>
+            `;
+            document.getElementById('status-dot').className = "w-3 h-3 bg-red-500 rounded-full shadow-[0_0_10px_#ef4444]";
         });
     </script>
 </body>
