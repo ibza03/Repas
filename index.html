@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Meal Planner Pro</title>
+    <title>Meal Planner Famille</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -11,185 +11,209 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
     <style>
-        body { font-family: 'Nunito', sans-serif; background: #FAF7F4; color: #1E1B18; padding-bottom: 100px; }
+        body { font-family: 'Nunito', sans-serif; background: #FAF7F4; color: #1E1B18; padding-bottom: 120px; }
         h1, h2, h3 { font-family: 'Playfair Display', serif; }
-        .ios-card { background: white; border-radius: 1.5rem; border: 1.5px solid #EDE6DE; }
+        .ios-card { background: white; border-radius: 1.2rem; border: 1.5px solid #EDE6DE; transition: all 0.2s; }
         .tab-bar { background: rgba(250, 247, 244, 0.95); backdrop-filter: blur(20px); border-top: 1px solid #EDE6DE; }
         .active-tab { color: #E85D75 !important; font-weight: 800; }
-        .badge { background: #E85D75; color: white; border-radius: 10px; padding: 1px 6px; font-size: 10px; position: absolute; top: 0; right: 5px; }
+        .active-dot { width: 14px; height: 3px; background: #E85D75; border-radius: 2px; margin: 2px auto 0; }
+        select { appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.5rem center; background-size: 1em; }
     </style>
 </head>
 <body>
 
-    <nav class="sticky top-0 z-50 bg-[#1E1B18] text-[#FAF7F4] p-4 shadow-lg">
+    <nav class="sticky top-0 z-50 bg-[#1E1B18] text-[#FAF7F4] p-4 shadow-md">
         <div class="max-w-xl mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-bold">🍽 Meal Planner</h1>
-            <div class="flex items-center gap-2">
-                <div id="sync-status" class="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span class="text-[9px] uppercase font-black opacity-50">Live Sync</span>
-            </div>
+            <h1 class="text-xl font-bold italic">🍽 Meal Planner</h1>
+            <span class="text-[10px] font-black opacity-40 uppercase">Famille Sync</span>
         </div>
     </nav>
 
-    <main id="app-content" class="max-w-xl mx-auto p-4"></main>
+    <main id="app-content" class="max-w-xl mx-auto p-4 animate-in fade-in"></main>
 
-    <div class="fixed bottom-0 left-0 right-0 tab-bar z-50 pb-6">
+    <div class="fixed bottom-0 left-0 right-0 tab-bar z-50 pb-6 safe-area-bottom">
         <div class="max-w-xl mx-auto flex justify-around p-2 text-[#B0A49A]">
-            <button onclick="setTab('week')" id="btn-week" class="flex flex-col items-center gap-1 flex-1">
-                <span class="text-2xl">📅</span><span class="text-[10px]">Semaine</span>
+            <button onclick="setTab('week')" id="btn-week" class="flex-1 flex flex-col items-center">
+                <span class="text-xl">📅</span><span class="text-[10px]">Semaine</span>
+                <div id="dot-week" class="hidden active-dot"></div>
             </button>
-            <button onclick="setTab('meals')" id="btn-meals" class="flex flex-col items-center gap-1 flex-1">
-                <span class="text-2xl">🍳</span><span class="text-[10px]">Repas</span>
+            <button onclick="setTab('meals')" id="btn-meals" class="flex-1 flex flex-col items-center">
+                <span class="text-xl">🍳</span><span class="text-[10px]">Repas</span>
+                <div id="dot-meals" class="hidden active-dot"></div>
             </button>
-            <button onclick="setTab('baby')" id="btn-baby" class="flex flex-col items-center gap-1 flex-1">
-                <span class="text-2xl">👶🏽</span><span class="text-[10px]">Bébés</span>
+            <button onclick="setTab('baby')" id="btn-baby" class="flex-1 flex flex-col items-center">
+                <span class="text-xl">👶🏽</span><span class="text-[10px]">Bébés</span>
+                <div id="dot-baby" class="hidden active-dot"></div>
             </button>
-            <button onclick="setTab('list')" id="btn-list" class="flex flex-col items-center gap-1 flex-1 relative">
-                <span class="text-2xl">🛒</span><span class="text-[10px]">Courses</span>
-                <span id="list-badge" class="badge hidden">0</span>
-            </button>
-            <button onclick="setTab('sync')" id="btn-sync" class="flex flex-col items-center gap-1 flex-1">
-                <span class="text-2xl">🔄</span><span class="text-[10px]">Partage</span>
+            <button onclick="setTab('list')" id="btn-list" class="flex-1 flex flex-col items-center relative">
+                <span class="text-xl">🛒</span><span class="text-[10px]">Courses</span>
+                <div id="dot-list" class="hidden active-dot"></div>
             </button>
         </div>
     </div>
 
     <script>
-        // 1. DATA & CONFIG
+        // 1. CONFIG & DATA
         const config = { databaseURL: "https://meal-planner-famille-default-rtdb.europe-west1.firebasedatabase.app" };
         firebase.initializeApp(config);
         const db = firebase.database();
 
-        const RECIPES = [
-            { id:"r1",  name:"Poulet rôti", cat:"Dîner", ing:["poulet","ail","huile d'olive","thym","citron","pomme de terre"] },
-            { id:"r2",  name:"Spaghetti pesto", cat:"Dîner", ing:["spaghetti","pesto","parmesan","ail","pignons de pin"] },
-            { id:"r3",  name:"Spaghetti bolognaise", cat:"Dîner", ing:["spaghetti","boeuf haché","tomate","oignon","parmesan"] },
-            { id:"r4",  name:"Riz poulet coco", cat:"Dîner", ing:["riz","poulet","lait de coco","curry","oignon"] },
-            { id:"r13", name:"Tartines & yaourt", cat:"Petit-déjeuner", ing:["pain","beurre","confiture","yaourt","orange"] },
-            // ... (Toutes tes autres recettes sont incluses dans la logique de sélection)
+        const FOOD_GROUPS = [
+            { id:"viandes", label:"Boucherie", icon:"🥩", color:"#E85D75", kw:["poulet","boeuf","porc","saumon","thon","jambon","steak","lardons"] },
+            { id:"legumes", label:"Primeur", icon:"🥦", color:"#2ECC8F", kw:["tomate","carotte","courgette","poivron","oignon","ail","pomme de terre"] },
+            { id:"laitiers", label:"Crèmerie", icon:"🧀", color:"#F5B731", kw:["lait","fromage","yaourt","beurre","crème","gruyère","parmesan"] },
+            { id:"feculents", label:"Épicerie", icon:"🍞", color:"#9B72F5", kw:["pain","pâtes","riz","farine","semoule","lentille"] }
         ];
 
-        let state = { currentTab: 'week', week: {}, baby: {}, shopping: {} };
+        let state = { currentTab: 'week', currentBaby: 'rokhaya', week: {}, meals: [], baby: {}, checked: {} };
 
-        // 2. REAL-TIME SYNC
-        db.ref('/').on('value', (snap) => {
-            const data = snap.val();
-            if (data) {
-                state.week = data.week || {};
-                state.baby = data.baby || {};
-                state.shopping = data.shopping || {};
-                render();
-            }
+        // 2. LIVE SYNC
+        db.ref('/').on('value', snap => {
+            const data = snap.val() || {};
+            state.week = data.week || {};
+            state.meals = Object.entries(data.meals || {}).map(([id, val]) => ({id, ...val}));
+            state.baby = data.baby || {};
+            state.checked = data.checked || {};
+            render();
         });
 
         function setTab(t) { state.currentTab = t; render(); }
 
-        // 3. LOGIQUE COURSES (Auto-Génération)
-        function updateShoppingList() {
-            let needed = {};
+        // 3. LOGIQUE DES COURSES (Groupement + Multiplicateur)
+        function getShoppingList() {
+            let counts = {};
             Object.values(state.week).forEach(day => {
-                Object.values(day).forEach(recipeId => {
-                    const r = RECIPES.find(x => x.id === recipeId);
-                    if (r) r.ing.forEach(i => { 
-                        if (!state.shopping[i]) needed[i] = false; 
-                    });
+                Object.values(day).forEach(mealId => {
+                    const meal = state.meals.find(m => m.id === mealId);
+                    if (meal && meal.ing) {
+                        meal.ing.split(',').forEach(i => {
+                            let name = i.trim().toLowerCase();
+                            if(name) counts[name] = (counts[name] || 0) + 1;
+                        });
+                    }
                 });
             });
-            // On fusionne avec l'existant sans écraser les "cochés"
-            db.ref('shopping').update(needed);
+            return counts;
+        }
+
+        function getGroup(ing) {
+            return FOOD_GROUPS.find(g => g.kw.some(k => ing.includes(k))) || { label:"Autres", icon:"🛒", color:"#94A3B8" };
         }
 
         // 4. RENDU
         function render() {
             const container = document.getElementById('app-content');
-            
-            // UI Tabs
             document.querySelectorAll('.tab-bar button').forEach(b => b.classList.remove('active-tab'));
+            document.querySelectorAll('.active-dot').forEach(d => d.classList.add('hidden'));
             document.getElementById(`btn-${state.currentTab}`).classList.add('active-tab');
+            document.getElementById(`dot-${state.currentTab}`).classList.remove('hidden');
 
             if (state.currentTab === 'week') {
                 const jours = ["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
-                let html = `<h2 class="text-2xl font-bold mb-6">Ma Semaine</h2>`;
-                jours.forEach(j => {
-                    const d = state.week[j] || {};
-                    html += `<div class="ios-card p-5 mb-4 shadow-sm">
-                        <b class="text-orange-500 text-[10px] uppercase tracking-widest mb-3 block">${j}</b>
-                        <div class="space-y-4">
-                            ${['Petit-déjeuner','Déjeuner','Dîner'].map(slot => `
+                container.innerHTML = `<h2 class="text-2xl font-bold mb-6">Menu Semaine</h2>` + 
+                jours.map(j => `
+                    <div class="ios-card p-5 mb-4 shadow-sm border-l-4" style="border-left-color: #F97316">
+                        <b class="text-orange-500 text-[10px] uppercase tracking-widest">${j}</b>
+                        <div class="mt-3 space-y-3">
+                            ${['Déjeuner','Dîner'].map(slot => `
                                 <div>
                                     <p class="text-[9px] font-bold text-slate-400 uppercase">${slot}</p>
-                                    <select onchange="saveWeek('${j}','${slot}',this.value)" class="w-full bg-slate-50 border-none font-bold text-sm rounded-lg p-2 mt-1">
+                                    <select onchange="db.ref('week/${j}/${slot}').set(this.value)" class="w-full font-bold text-sm p-1 border-b border-slate-100 outline-none bg-transparent">
                                         <option value="">— Choisir —</option>
-                                        ${RECIPES.filter(r => r.cat === slot || slot === 'Déjeuner').map(r => 
-                                            `<option value="${r.id}" ${d[slot] === r.id ? 'selected' : ''}>${r.name}</option>`
-                                        ).join('')}
+                                        ${state.meals.map(m => `<option value="${m.id}" ${state.week[j]?.[slot] === m.id ? 'selected' : ''}>${m.name}</option>`).join('')}
                                     </select>
                                 </div>
                             `).join('')}
                         </div>
-                    </div>`;
-                });
-                container.innerHTML = html;
+                    </div>
+                `).join('');
             }
 
-            if (state.currentTab === 'list') {
-                const items = Object.entries(state.shopping || {});
-                let html = `<div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold">Courses</h2>
-                    <button onclick="clearList()" class="text-xs text-red-500 font-bold">Vider</button>
-                </div>`;
-                items.forEach(([name, checked]) => {
-                    html += `<div onclick="toggleItem('${name}', ${checked})" class="ios-card p-4 mb-2 flex items-center gap-3 ${checked ? 'opacity-40' : ''}">
-                        <div class="w-5 h-5 border-2 border-orange-500 rounded flex items-center justify-center">
-                            ${checked ? '✓' : ''}
+            if (state.currentTab === 'meals') {
+                container.innerHTML = `<div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">Mes Recettes</h2>
+                    <button onclick="addMeal()" class="bg-[#1E1B18] text-white px-4 py-2 rounded-xl text-xs font-bold">+ Nouveau</button>
+                </div>` + (state.meals.length ? state.meals.map(m => `
+                    <div class="ios-card p-4 mb-3 flex justify-between items-center group">
+                        <div onclick="addMeal('${m.id}')" class="cursor-pointer">
+                            <p class="font-bold text-slate-800">${m.name}</p>
+                            <p class="text-[10px] text-slate-400 truncate w-48">${m.ing || 'Aucun ingrédient'}</p>
                         </div>
-                        <span class="${checked ? 'line-through' : 'font-bold'}">${name}</span>
-                    </div>`;
-                });
-                container.innerHTML = html || '<p class="text-center text-slate-400">Liste vide. Planifiez des repas !</p>';
+                        <button onclick="if(confirm('Supprimer ?')) db.ref('meals/${m.id}').remove()" class="text-red-400 text-xl p-2 opacity-0 group-hover:opacity-100">🗑</button>
+                    </div>
+                `).join('') : '<p class="text-center py-10 opacity-30">Aucun repas enregistré</p>');
             }
 
             if (state.currentTab === 'baby') {
-                container.innerHTML = `<h2 class="text-2xl font-bold mb-6">Bébés 👶🏽</h2>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="ios-card p-4 border-b-4 border-pink-400"><b>Rokhaya</b><p class="text-xs opacity-60">Midi: ${state.baby.rokhaya?.midi || '-'}</p></div>
-                    <div class="ios-card p-4 border-b-4 border-blue-400"><b>Saliou</b><p class="text-xs opacity-60">Midi: ${state.baby.saliou?.midi || '-'}</p></div>
-                </div>
-                <p class="text-[10px] mt-10 text-center opacity-40 italic underline" onclick="editBaby()">Cliquer pour modifier les repas bébés</p>`;
-            }
-
-            if (state.currentTab === 'sync') {
-                container.innerHTML = `<h2 class="text-2xl font-bold mb-6">Partage</h2>
-                <div class="space-y-4">
-                    <button onclick="exportJSON()" class="w-full ios-card p-6 text-left font-bold">📤 Exporter les données (.json)</button>
-                    <div class="p-4 text-xs bg-orange-50 text-orange-700 rounded-2xl leading-relaxed">
-                        <b>Astuce :</b> Envoyez le fichier à votre femme, elle n'aura qu'à l'importer pour avoir exactement la même bibliothèque !
+                const b = state.currentBaby === 'rokhaya' ? {name:'Rokhaya', color:'#F06292'} : {name:'Saliou', color:'#4BA3F5'};
+                container.innerHTML = `
+                    <div class="flex gap-2 mb-8">
+                        <button onclick="state.currentBaby='rokhaya';render()" class="flex-1 p-3 rounded-2xl font-bold text-sm ${state.currentBaby==='rokhaya'?'bg-[#F06292] text-white shadow-lg':'bg-white'}">Rokhaya</button>
+                        <button onclick="state.currentBaby='saliou';render()" class="flex-1 p-3 rounded-2xl font-bold text-sm ${state.currentBaby==='saliou'?'bg-[#4BA3F5] text-white shadow-lg':'bg-white'}">Saliou</button>
                     </div>
-                </div>`;
+                    <h2 class="text-xl font-bold mb-4" style="color:${b.color}">Menus de ${b.name}</h2>
+                    ${["Matin","Midi","Goûter","Soir"].map(m => `
+                        <div onclick="editBaby('${m}')" class="ios-card p-5 mb-3 flex justify-between items-center cursor-pointer border-l-4" style="border-left-color: ${b.color}">
+                            <div><p class="text-[9px] font-bold opacity-40 uppercase">${m}</p><p class="font-bold">${state.baby[state.currentBaby]?.[m] || '-'}</p></div>
+                            <span class="text-slate-200">✎</span>
+                        </div>
+                    `).join('')}
+                `;
+            }
+
+            if (state.currentTab === 'list') {
+                const list = getShoppingList();
+                const itemsByGroup = {};
+                Object.entries(list).forEach(([name, count]) => {
+                    const g = getGroup(name).label;
+                    if(!itemsByGroup[g]) itemsByGroup[g] = [];
+                    itemsByGroup[g].push({name, count});
+                });
+
+                container.innerHTML = `<div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">Courses</h2>
+                    <button onclick="db.ref('checked').remove()" class="text-xs text-orange-500 font-bold">Effacer cochés</button>
+                </div>` + FOOD_GROUPS.concat({label:"Autres", icon:"🛒", color:"#94A3B8"}).map(g => {
+                    const items = itemsByGroup[g.label];
+                    if(!items) return '';
+                    return `
+                        <div class="mb-6">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="p-2 rounded-lg" style="background:${g.color}20">${g.icon}</span>
+                                <b class="text-sm uppercase tracking-widest opacity-60">${g.label}</b>
+                            </div>
+                            <div class="space-y-2">
+                                ${items.map(it => `
+                                    <div onclick="toggleItem('${it.name}')" class="ios-card p-4 flex justify-between items-center ${state.checked[it.name] ? 'opacity-30' : ''}">
+                                        <span class="font-bold ${state.checked[it.name] ? 'line-through' : ''}">${it.name} ${it.count > 1 ? `<span class="text-orange-500 ml-1">x${it.count}</span>` : ''}</span>
+                                        <div class="w-5 h-5 border-2 rounded-md ${state.checked[it.name]?'bg-green-500 border-green-500':'border-slate-200'}"></div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
             }
         }
 
-        // 5. ACTIONS
-        function saveWeek(day, slot, val) {
-            db.ref(`week/${day}/${slot}`).set(val);
-            // On déclenche l'ajout automatique d'ingrédients
-            const r = RECIPES.find(x => x.id === val);
-            if (r) {
-                r.ing.forEach(i => db.ref(`shopping/${i}`).set(false));
-            }
+        // 5. FONCTIONS ACTIONS
+        function addMeal(id) {
+            const m = id ? state.meals.find(x => x.id === id) : {name:'', ing:''};
+            const name = prompt("Nom du plat :", m.name);
+            if(!name) return;
+            const ing = prompt("Ingrédients (séparés par virgule) :", m.ing);
+            const newId = id || db.ref('meals').push().key;
+            db.ref('meals/'+newId).set({name, ing: ing || ''});
         }
 
-        function toggleItem(name, current) { db.ref(`shopping/${name}`).set(!current); }
-        function clearList() { if(confirm("Vider la liste ?")) db.ref('shopping').remove(); }
-        function exportJSON() {
-            const data = JSON.stringify(state);
-            const blob = new Blob([data], {type: "application/json"});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = "repas-famille.json"; a.click();
+        function editBaby(moment) {
+            const current = state.baby[state.currentBaby]?.[moment] || "";
+            const val = prompt(`${moment} pour ${state.currentBaby} :`, current);
+            if(val !== null) db.ref(`baby/${state.currentBaby}/${moment}`).set(val);
         }
-        function editBaby() {
-            const r = prompt("Midi Rokhaya ?"); if(r) db.ref('baby/rokhaya/midi').set(r);
-            const s = prompt("Midi Saliou ?"); if(s) db.ref('baby/saliou/midi').set(s);
+
+        function toggleItem(name) {
+            db.ref('checked/'+name).set(!state.checked[name]);
         }
     </script>
 </body>
