@@ -2,82 +2,102 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Menu Famille</title>
+    
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+
     <style>
-        body { font-family: 'Outfit', sans-serif; background-color: #f8fafc; }
-        .ios-card { transition: all 0.2s; background: white; border-radius: 2rem; padding: 1.5rem; border: 1px solid #f1f5f9; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .ios-card:active { transform: scale(0.97); background-color: #f8fafc; }
+        body { font-family: 'Outfit', sans-serif; background: #fdfbf7; -webkit-tap-highlight-color: transparent; }
+        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.5); }
+        .day-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 2.5rem; overflow: hidden; position: relative; }
+        .day-card:active { transform: scale(0.96); }
+        .gradient-text { background: linear-gradient(135deg, #f97316 0%, #f43f5e 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 12px #22c55e; }
     </style>
 </head>
-<body class="p-4 pt-10">
+<body class="p-4 pt-12 pb-20">
+
     <div class="max-w-md mx-auto">
-        <h1 class="text-3xl font-black mb-8 text-slate-800">Menu Famille 🍴</h1>
-        <div id="app" class="space-y-4">
-            <div class="text-center py-20 text-slate-400 italic animate-pulse">
-                Connexion à Firebase en cours...
+        <header class="flex justify-between items-center mb-10 px-2">
+            <div>
+                <span class="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest">Ma Cuisine</span>
+                <h1 class="text-4xl font-black text-slate-800 mt-1">Menu <span class="gradient-text text-orange-500">Famille</span></h1>
+            </div>
+            <div class="status-dot"></div>
+        </header>
+
+        <div id="app" class="space-y-6">
+            <div class="flex flex-col items-center py-20 text-slate-300">
+                <div class="animate-spin text-3xl mb-4 text-orange-400">🥗</div>
+                <p>Mise en place de la table...</p>
             </div>
         </div>
     </div>
 
     <script>
-        // CONFIGURATION PRECISE (SANS ESPACES)
-        var firebaseConfig = {
-            databaseURL: "https://meal-planner-famille-default-rtdb.europe-west1.firebasedatabase.app"
+        // Ta config Firebase
+        var firebaseConfig = { databaseURL: "https://meal-planner-famille-default-rtdb.europe-west1.firebasedatabase.app" };
+        firebase.initializeApp(firebaseConfig);
+        var db = firebase.database();
+        var jours = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+
+        function render(data) {
+            var app = document.getElementById('app');
+            app.innerHTML = '';
+
+            jours.forEach(function(j) {
+                var menu = (data && data[j]) ? data[j] : { midi: "Cliquer pour ajouter", soir: "Cliquer pour ajouter" };
+                
+                var card = document.createElement('div');
+                card.className = "day-card glass p-7 shadow-sm border border-orange-50";
+                
+                card.innerHTML = `
+                    <div class="absolute top-0 right-0 w-20 h-20 bg-orange-100/30 rounded-bl-[4rem] -mr-6 -mt-6"></div>
+                    <h2 class="text-2xl font-extrabold text-slate-800 mb-6 flex items-center">
+                        ${j} <span class="ml-2 w-1.5 h-1.5 bg-orange-400 rounded-full"></span>
+                    </h2>
+                    
+                    <div class="space-y-6 relative">
+                        <div onclick="upd('${j}','midi','${menu.midi.replace(/'/g, "\\'")}')" class="group">
+                            <div class="flex items-center gap-2 mb-1 text-orange-500 font-bold text-[10px] uppercase tracking-tighter">
+                                <span>☀️ Midi</span>
+                            </div>
+                            <p class="text-slate-700 text-lg font-semibold leading-tight">${menu.midi}</p>
+                        </div>
+
+                        <div onclick="upd('${j}','soir','${menu.soir.replace(/'/g, "\\'")}')" class="group">
+                            <div class="flex items-center gap-2 mb-1 text-indigo-500 font-bold text-[10px] uppercase tracking-tighter">
+                                <span>🌙 Soir</span>
+                            </div>
+                            <p class="text-slate-700 text-lg font-semibold leading-tight">${menu.soir}</p>
+                        </div>
+                    </div>
+                `;
+                app.appendChild(card);
+            });
+        }
+
+        window.upd = function(j, m, a) {
+            var def = (a === "Cliquer pour ajouter") ? "" : a;
+            var r = prompt("Changer le menu du " + j + " (" + m + ") :", def);
+            if (r !== null) {
+                db.ref('menus/' + j + '/' + m).set(r.trim() || "Cliquer pour ajouter");
+            }
         };
 
-        // INITIALISATION
-        try {
-            firebase.initializeApp(firebaseConfig);
-            var db = firebase.database();
-            var jours = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
-
-            // ECOUTE DES DONNEES
-            db.ref('menus/').on('value', function(snapshot) {
-                var data = snapshot.val() || {};
-                var container = document.getElementById('app');
-                container.innerHTML = '';
-
-                jours.forEach(function(j) {
-                    var menu = data[j] || { midi: "Ajouter", soir: "Ajouter" };
-                    var card = document.createElement('div');
-                    card.className = "ios-card mb-4";
-                    card.innerHTML = 
-                        '<b class="text-orange-500 text-xs uppercase tracking-widest block mb-4 border-b pb-2">' + j + '</b>' +
-                        '<div onclick="upd(\''+j+'\',\'midi\',\''+menu.midi+'\')" class="mb-4 cursor-pointer">' +
-                            '<small class="text-slate-400 font-bold text-[10px] block">SOLAIRE MIDI</small>' +
-                            '<p class="text-slate-700 font-bold text-lg leading-tight">' + menu.midi + '</p>' +
-                        '</div>' +
-                        '<div onclick="upd(\''+j+'\',\'soir\',\''+menu.soir+'\')" class="cursor-pointer">' +
-                            '<small class="text-indigo-400 font-bold text-[10px] block">LUNAIRE SOIR</small>' +
-                            '<p class="text-slate-700 font-bold text-lg leading-tight">' + menu.soir + '</p>' +
-                        '</div>';
-                    container.appendChild(card);
-                });
-            }, function(error) {
-                document.getElementById('app').innerHTML = 
-                    '<div class="bg-red-500 text-white p-6 rounded-3xl font-bold">' +
-                    'ERREUR DE PERMISSION : ' + error.code + 
-                    '<br><br>Vérifie tes règles Firebase (read/write: true) !' +
-                    '</div>';
-            });
-
-            // FONCTION DE MISE À JOUR
-            window.upd = function(j, moment, actuel) {
-                var val = prompt("Repas du " + j + " (" + moment + ") :", (actuel === "Ajouter" ? "" : actuel));
-                if (val !== null) {
-                    db.ref('menus/' + j + '/' + moment).set(val.trim() || "Ajouter");
-                }
-            };
-        } catch (e) {
-            document.getElementById('app').innerHTML = '<div class="bg-orange-500 text-white p-6 rounded-3xl">ERREUR : ' + e.message + '</div>';
-        }
+        db.ref('menus/').on('value', function(snap) {
+            render(snap.val());
+        }, function(error) {
+            document.getElementById('app').innerHTML = `<div class="p-6 bg-red-50 text-red-500 rounded-3xl font-bold">Erreur : ${error.code}</div>`;
+        });
     </script>
 </body>
 </html>
