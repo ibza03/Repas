@@ -3,126 +3,161 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Meal Planner Famille</title>
+    <title>Family Planner Premium</title>
     
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        iosBg: '#F2F2F7',
+                        cardBg: '#FFFFFF',
+                        neonBlue: '#007AFF',
+                        neonGreen: '#34C759',
+                        neonPink: '#FF2D55',
+                        neonIndigo: '#5856D6',
+                    },
+                    borderRadius: {
+                        'ios': '20px',
+                    }
+                }
+            }
+        }
+    </script>
+
     <style>
-        body { font-family: 'Nunito', sans-serif; background: #FAF7F4; color: #1E1B18; padding-bottom: 120px; }
-        h1, h2, h3 { font-family: 'Playfair Display', serif; }
-        .ios-card { background: white; border-radius: 1.2rem; border: 1.5px solid #EDE6DE; }
-        .tab-bar { background: rgba(250, 247, 244, 0.95); backdrop-filter: blur(20px); border-top: 1px solid #EDE6DE; position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; padding-bottom: env(safe-area-inset-bottom); }
-        .active-tab { color: #E85D75 !important; font-weight: 800; }
-        .active-dot { width: 14px; height: 3px; background: #E85D75; border-radius: 2px; margin: 2px auto 0; }
-        .badge-count { background: #E85D75; color: white; font-size: 10px; border-radius: 10px; padding: 0 5px; position: absolute; top: -5px; right: -5px; }
+        body { font-family: 'Nunito', sans-serif; background-color: #F2F2F7; color: #1C1C1E; padding-bottom: 110px; -webkit-font-smoothing: antialiased; }
+        
+        /* Effet Glassmorphism */
+        .glass { background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 0.5px solid rgba(0,0,0,0.1); }
+        .tab-bar { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-top: 0.5px solid rgba(0,0,0,0.05); }
+
+        /* Cartes Premium */
+        .ios-card { background: #FFFFFF; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.02); transition: transform 0.2s ease; }
+        .ios-card:active { transform: scale(0.98); }
+
+        /* Navigation active avec effet néon */
+        .active-tab { color: #007AFF !important; }
+        .active-dot { width: 6px; height: 6px; background: #007AFF; border-radius: 50%; margin-top: 4px; box-shadow: 0 0 10px #007AFF; }
+        
+        /* Tags ingrédients */
+        .ing-tag { background: #F2F2F7; color: #3A3A3C; border-radius: 10px; padding: 5px 12px; font-size: 13px; font-weight: 700; display: inline-flex; items-center; gap: 6px; }
+        
+        /* Boutons premium */
+        .btn-premium { background: #007AFF; color: white; border-radius: 14px; font-weight: 700; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(0,122,255,0.3); }
+        .btn-premium:active { transform: translateY(1px); box-shadow: 0 2px 6px rgba(0,122,255,0.2); }
+        .btn-reset { background: rgba(255, 59, 48, 0.1); color: #FF3B30; padding: 8px 16px; border-radius: 12px; font-size: 12px; font-weight: 800; text-transform: uppercase; }
+
+        /* Custom Select */
+        select { outline: none; transition: color 0.2s; appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23C7C7CC' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; background-size: 14px; padding-right: 28px; }
+        select:focus { color: #007AFF; background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23007AFF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); }
+
+        /* Animation de chargement douce */
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .sync-pulse { animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
     </style>
 </head>
 <body>
 
-    <nav class="sticky top-0 z-50 bg-[#1E1B18] text-[#FAF7F4] p-4 shadow-md">
+    <nav class="sticky top-0 z-50 glass p-4 pb-3">
         <div class="max-w-xl mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-bold italic">🍽 Meal Planner</h1>
-            <button onclick="window.location.reload()" class="text-[10px] bg-white/10 px-2 py-1 rounded">🔄 SYNC</button>
+            <h1 class="text-2xl font-extrabold tracking-tighter text-slate-950">Family <span class="text-neonBlue">Planner</span></h1>
+            <div id="sync-indicator" class="w-3 h-3 bg-neonGreen rounded-full shadow-[0_0_10px_#34C759]"></div>
         </div>
     </nav>
 
-    <main id="app-content" class="max-w-xl mx-auto p-4"></main>
+    <main id="app-content" class="max-w-xl mx-auto p-4 space-y-5 animate-in fade-in duration-300"></main>
 
-    <div class="tab-bar">
-        <div class="max-w-xl mx-auto flex justify-around p-2 text-[#B0A49A]">
+    <div class="tab-bar fixed bottom-0 left-0 right-0 z-50 pb-6 safe-area-bottom">
+        <div class="max-w-xl mx-auto flex justify-around p-3 text-[#8E8E93]">
             <button onclick="setTab('week')" id="btn-week" class="flex-1 flex flex-col items-center">
-                <span class="text-xl">📅</span><span class="text-[10px]">Semaine</span>
+                <span class="text-2xl">🗓</span><span class="text-[11px] font-bold mt-1">Menu</span>
                 <div id="dot-week" class="hidden active-dot"></div>
             </button>
             <button onclick="setTab('meals')" id="btn-meals" class="flex-1 flex flex-col items-center">
-                <span class="text-xl">🍳</span><span class="text-[10px]">Repas</span>
+                <span class="text-2xl">🍱</span><span class="text-[11px] font-bold mt-1">Recettes</span>
                 <div id="dot-meals" class="hidden active-dot"></div>
             </button>
             <button onclick="setTab('baby')" id="btn-baby" class="flex-1 flex flex-col items-center">
-                <span class="text-xl">👶🏽</span><span class="text-[10px]">Bébés</span>
+                <span class="text-2xl">👶🏽</span><span class="text-[11px] font-bold mt-1">Bébés</span>
                 <div id="dot-baby" class="hidden active-dot"></div>
             </button>
             <button onclick="setTab('list')" id="btn-list" class="flex-1 flex flex-col items-center relative">
-                <span class="text-xl">🛒</span><span class="text-[10px]">Courses</span>
+                <span class="text-2xl">🛒</span><span class="text-[11px] font-bold mt-1">Courses</span>
                 <div id="dot-list" class="hidden active-dot"></div>
-                <span id="global-badge" class="badge-count hidden">0</span>
             </button>
         </div>
     </div>
 
     <script>
-        // 1. CONFIGURATION
         const firebaseConfig = { databaseURL: "https://meal-planner-famille-default-rtdb.europe-west1.firebasedatabase.app" };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
         const FOOD_GROUPS = [
-            { id:"viandes", label:"Boucherie", icon:"🥩", color:"#E85D75", kw:["poulet","boeuf","porc","saumon","thon","jambon","steak","lardons","dinde","merlu"] },
-            { id:"legumes", label:"Primeur", icon:"🥦", color:"#2ECC8F", kw:["tomate","carotte","courgette","poivron","oignon","ail","pomme de terre","épinard","brocoli","salade","concombre"] },
-            { id:"laitiers", label:"Crèmerie", icon:"🧀", color:"#F5B731", kw:["lait","fromage","yaourt","beurre","crème","gruyère","parmesan","mozzarella","emmental"] },
-            { id:"feculents", label:"Épicerie", icon:"🍞", color:"#9B72F5", kw:["pain","pâtes","riz","farine","semoule","lentille","quinoa","spaghetti"] }
+            { id:"viandes", label:"Boucherie & Poisson", icon:"🥩", color:"#FF3B30", kw:["poulet","boeuf","porc","saumon","thon","steak","jambon","crevette","merlu"] },
+            { id:"legumes", label:"Fruits & Légumes", icon:"🥦", color:"#34C759", kw:["tomate","carotte","oignon","ail","courgette","pomme","salade","avocat","banane"] },
+            { id:"laitiers", label:"Frais & Laitage", icon:"🧀", color:"#AF52DE", kw:["lait","beurre","yaourt","fromage","oeuf","crème","parmesan","gruyère"] },
+            { id:"bebe", label:"Rayon Bébé", icon:"🍼", color:"#5856D6", kw:["couche","lingette","petit pot","lait bébé","compote bébé"] },
+            { id:"hygiene", label:"Hygiène & Soin", icon:"🧼", color:"#007AFF", kw:["savon","dentifrice","shampoing","douche","papier wc","sopalin","lessive"] },
+            { id:"boissons", label:"Boissons", icon:"🍷", color:"#FF9500", kw:["eau","jus","soda","bière","vin","café","thé"] },
+            { id:"feculents", label:"Épicerie Sec", icon:"🍞", color:"#8E8E93", kw:["riz","pâtes","farine","sucre","huile","sel","pain","lentille","conserve","chocolat","biscuit","gâteau"] }
         ];
 
-        const DEFAULT_RECIPES = {
-            "r1": { name:"Poulet rôti", cat:"Dîner", ing:"poulet, ail, huile d'olive, thym, citron, pomme de terre" },
-            "r2": { name:"Spaghetti pesto", cat:"Dîner", ing:"spaghetti, pesto, parmesan, ail" },
-            "r3": { name:"Spaghetti bolognaise", cat:"Dîner", ing:"spaghetti, boeuf haché, tomate, oignon, parmesan" },
-            "r4": { name:"Riz poulet coco", cat:"Dîner", ing:"riz, poulet, lait de coco, curry" },
-            "r5": { name:"Quiche au thon", cat:"Dîner", ing:"pâte brisée, thon, oeuf, crème fraîche, gruyère" },
-            "r8": { name:"Salade niçoise", cat:"Déjeuner", ing:"salade, thon, tomate, oeuf, olive" },
-            "r13": { name:"Tartines & yaourt", cat:"Petit-déjeuner", ing:"pain, beurre, confiture, yaourt" }
-        };
+        let state = { currentTab: 'week', currentBaby: 'rokhaya', week: {}, meals: {}, baby: {}, checked: {}, manualItems: {} };
 
-        let state = { currentTab: 'week', currentBaby: 'rokhaya', week: {}, meals: {}, baby: {}, checked: {} };
+        // Indicateur de synchro visuel
+        db.ref('.info/connected').on('value', snap => {
+            const indicator = document.getElementById('sync-indicator');
+            if (snap.val() === true) {
+                indicator.className = "w-3 h-3 bg-neonGreen rounded-full shadow-[0_0_10px_#34C759]";
+            } else {
+                indicator.className = "w-3 h-3 bg-gray-300 rounded-full sync-pulse";
+            }
+        });
 
-        // 2. SYNCHRONISATION
         db.ref('/').on('value', snap => {
             const data = snap.val() || {};
-            
-            // Si la base est totalement vide, on injecte les recettes par défaut
-            if (!data.meals) {
-                db.ref('meals').set(DEFAULT_RECIPES);
-                return;
-            }
-
             state.week = data.week || {};
             state.meals = data.meals || {};
             state.baby = data.baby || {};
             state.checked = data.checked || {};
+            state.manualItems = data.manualItems || {};
             render();
         });
 
         function setTab(t) { state.currentTab = t; render(); }
 
-        // 3. LOGIQUE COURSES
         function getShoppingList() {
             let counts = {};
             Object.values(state.week).forEach(day => {
                 Object.values(day).forEach(mealId => {
                     const meal = state.meals[mealId];
                     if (meal && meal.ing) {
-                        meal.ing.split(',').forEach(i => {
+                        meal.ing.split(',').filter(x => x.trim()).forEach(i => {
                             let name = i.trim().toLowerCase();
-                            if(name) counts[name] = (counts[name] || 0) + 1;
+                            counts[name] = (counts[name] || 0) + 1;
                         });
                     }
                 });
+            });
+            Object.keys(state.manualItems).forEach(name => {
+                counts[name] = (counts[name] || 0) + 1;
             });
             return counts;
         }
 
         function getGroup(ing) {
-            return FOOD_GROUPS.find(g => g.kw.some(k => ing.includes(k))) || { label:"Autres", icon:"🛒", color:"#94A3B8" };
+            return FOOD_GROUPS.find(g => g.kw.some(k => ing.includes(k))) || { label:"Divers", icon:"📦", color:"#C7C7CC" };
         }
 
-        // 4. RENDU DE L'INTERFACE
         function render() {
             const container = document.getElementById('app-content');
-            
-            // UI Onglets
             document.querySelectorAll('.tab-bar button').forEach(b => b.classList.remove('active-tab'));
             document.querySelectorAll('.active-dot').forEach(d => d.classList.add('hidden'));
             document.getElementById(`btn-${state.currentTab}`).classList.add('active-tab');
@@ -130,16 +165,22 @@
 
             if (state.currentTab === 'week') {
                 const jours = ["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
-                container.innerHTML = `<h2 class="text-2xl font-bold mb-6">Menu Semaine</h2>` + 
+                container.innerHTML = `
+                <div class="flex justify-between items-center mb-5 px-1">
+                    <h2 class="text-2xl font-extrabold tracking-tight">Ma Semaine</h2>
+                    <button onclick="resetWeek()" class="btn-reset">Tout effacer</button>
+                </div>` + 
                 jours.map(j => `
-                    <div class="ios-card p-5 mb-4 shadow-sm border-l-4 border-orange-400">
-                        <b class="text-orange-500 text-[10px] uppercase tracking-widest">${j}</b>
-                        <div class="mt-3 space-y-3">
-                            ${['Petit-déjeuner', 'Déjeuner', 'Dîner'].map(slot => `
+                    <div class="ios-card p-5 border-l-[6px]" style="border-left-color: #F97316">
+                        <div class="flex items-center gap-2 mb-4 border-b border-slate-100 pb-3">
+                            <span class="text-sm font-extrabold text-orange-600 uppercase tracking-tighter">${j}</span>
+                        </div>
+                        <div class="grid grid-cols-1 gap-5">
+                            ${['Déjeuner', 'Dîner', 'Dessert'].map(slot => `
                                 <div>
-                                    <p class="text-[9px] font-bold text-slate-400 uppercase">${slot}</p>
-                                    <select onchange="db.ref('week/${j}/${slot}').set(this.value)" class="w-full font-bold text-sm py-1 outline-none bg-transparent border-b border-slate-100">
-                                        <option value="">— Choisir un plat —</option>
+                                    <label class="text-[11px] font-extrabold text-gray-400 uppercase block mb-1.5 px-1">${slot}</label>
+                                    <select onchange="db.ref('week/${j}/${slot}').set(this.value)" class="w-full font-bold text-[15px] bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                        <option value="">— Aucun —</option>
                                         ${Object.entries(state.meals).map(([id, m]) => `<option value="${id}" ${state.week[j]?.[slot] === id ? 'selected' : ''}>${m.name}</option>`).join('')}
                                     </select>
                                 </div>
@@ -150,34 +191,39 @@
             }
 
             if (state.currentTab === 'meals') {
-                container.innerHTML = `<div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold">Mes Repas</h2>
-                    <button onclick="addMeal()" class="bg-[#1E1B18] text-white px-4 py-2 rounded-xl text-xs font-bold">+ Ajouter</button>
-                </div>` + Object.entries(state.meals).map(([id, m]) => `
-                    <div class="ios-card p-4 mb-3 flex justify-between items-center">
-                        <div onclick="addMeal('${id}')" class="cursor-pointer flex-1">
-                            <p class="font-bold text-slate-800">${m.name}</p>
-                            <p class="text-[10px] text-slate-400 uppercase font-bold">${m.cat}</p>
-                        </div>
-                        <button onclick="if(confirm('Supprimer ?')) db.ref('meals/${id}').remove()" class="text-red-300 ml-4">🗑</button>
+                container.innerHTML = `<div class="flex justify-between items-center mb-5 px-1"><h2 class="text-2xl font-extrabold tracking-tight">Recettes</h2><button onclick="addMeal()" class="btn-premium px-5 py-2.5 text-sm">+ Nouveau plat</button></div>` + 
+                Object.entries(state.meals).map(([id, m]) => `
+                <div class="ios-card p-5 mb-4">
+                    <div class="flex justify-between items-start mb-4">
+                        <h3 class="font-extrabold text-lg tracking-tight leading-tight" onclick="renameMeal('${id}', '${m.name}')">${m.name}</h3>
+                        <button onclick="if(confirm('Supprimer cette recette ?')) db.ref('meals/${id}').remove()" class="text-gray-300 ml-3">🗑</button>
                     </div>
-                `).join('');
+                    <div class="flex flex-wrap gap-2.5">
+                        ${(m.ing || "").split(',').filter(x=>x.trim()).map(ing => `
+                            <span class="ing-tag">${ing} <button onclick="removeIng('${id}','${ing}')" class="text-red-400 ml-1.5 font-bold">✕</button></span>
+                        `).join('')}
+                        <button onclick="addIngToMeal('${id}')" class="ing-tag border-2 border-dashed border-neonBlue text-neonBlue bg-transparent">+ Ajouter</button>
+                    </div>
+                </div>`).join('');
             }
 
             if (state.currentTab === 'baby') {
-                const b = state.currentBaby === 'rokhaya' ? {name:'Rokhaya', color:'#F06292'} : {name:'Saliou', color:'#4BA3F5'};
+                const b = state.currentBaby === 'rokhaya' ? {name:'Rokhaya', color:'#FF2D55'} : {name:'Saliou', color:'#007AFF'};
                 container.innerHTML = `
-                    <div class="flex gap-2 mb-8">
-                        <button onclick="state.currentBaby='rokhaya';render()" class="flex-1 p-3 rounded-2xl font-bold ${state.currentBaby==='rokhaya'?'bg-[#F06292] text-white shadow-lg':'bg-white text-slate-400'}">Rokhaya</button>
-                        <button onclick="state.currentBaby='saliou';render()" class="flex-1 p-3 rounded-2xl font-bold ${state.currentBaby==='saliou'?'bg-[#4BA3F5] text-white shadow-lg':'bg-white text-slate-400'}">Saliou</button>
+                <div class="flex gap-2.5 mb-6 bg-white p-1.5 rounded-2xl shadow-inner">
+                    <button onclick="state.currentBaby='rokhaya';render()" class="flex-1 py-3.5 rounded-xl font-extrabold text-sm transition-all ${state.currentBaby==='rokhaya'?'bg-neonPink text-white shadow-lg shadow-neonPink/30':'text-gray-400'}">Rokhaya</button>
+                    <button onclick="state.currentBaby='saliou';render()" class="flex-1 py-3.5 rounded-xl font-extrabold text-sm transition-all ${state.currentBaby==='saliou'?'bg-neonBlue text-white shadow-lg shadow-neonBlue/30':'text-gray-400'}">Saliou</button>
+                </div>
+                <div class="ios-card p-5 mb-4 bg-yellow-50 border-yellow-100">
+                    <p class="text-[11px] font-extrabold uppercase text-yellow-600 mb-1.5">📝 Notes & Allergies</p>
+                    <textarea onchange="db.ref('baby/${state.currentBaby}/notes').set(this.value)" placeholder="Notes importantes..." class="w-full bg-transparent text-[15px] font-bold text-yellow-800 outline-none" rows="1">${state.baby[state.currentBaby]?.notes || ''}</textarea>
+                </div>
+                ${["Matin","Midi","Goûter","Dessert","Soir"].map(m => `
+                    <div onclick="editBaby('${m}')" class="ios-card p-5 mb-3 flex justify-between items-center cursor-pointer border-l-[6px]" style="border-left-color:${b.color}">
+                        <div><p class="text-[11px] font-bold text-gray-400 uppercase">${m}</p><p class="font-bold text-[16px] text-slate-800">${state.baby[state.currentBaby]?.[m] || '—'}</p></div>
+                        <span class="text-gray-300 text-xs">✎</span>
                     </div>
-                    <h3 class="font-bold mb-4 px-2" style="color:${b.color}">Planning de ${b.name}</h3>
-                    ${["Matin","Midi","Goûter","Soir"].map(m => `
-                        <div onclick="editBaby('${m}')" class="ios-card p-5 mb-3 flex justify-between items-center cursor-pointer border-l-4" style="border-left-color:${b.color}">
-                            <div><p class="text-[9px] font-bold opacity-40 uppercase">${m}</p><p class="font-bold text-sm">${state.baby[state.currentBaby]?.[m] || 'Non renseigné'}</p></div>
-                            <span class="text-slate-200">✎</span>
-                        </div>
-                    `).join('')}`;
+                `).join('')}`;
             }
 
             if (state.currentTab === 'list') {
@@ -189,47 +235,70 @@
                     itemsByGroup[g].push({name, count});
                 });
 
-                let totalUnchecked = 0;
-                let html = `<div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold">Liste de Courses</h2><button onclick="db.ref('checked').remove()" class="text-xs text-orange-500 font-bold uppercase">Nettoyer</button></div>`;
+                let html = `
+                <h2 class="text-2xl font-extrabold tracking-tight mb-5 px-1">Ma Liste</h2>
+                <div class="flex gap-3 mb-7"><input id="new-item" type="text" placeholder="Lait, Lessive, Pain..." class="flex-1 p-4 ios-card !rounded-2xl outline-none shadow-sm border border-slate-100"><button onclick="addManualItem()" class="bg-neonBlue text-white w-16 rounded-2xl font-black text-2xl shadow-lg shadow-neonBlue/30 hover:bg-blue-600 active:scale-95">+</button></div>`;
                 
-                FOOD_GROUPS.concat({label:"Autres", icon:"🛒", color:"#94A3B8"}).forEach(g => {
+                FOOD_GROUPS.concat({label:"Divers", icon:"📦", color:"#C7C7CC"}).forEach(g => {
                     const items = itemsByGroup[g.label];
                     if(!items) return;
-                    html += `<div class="mb-6"><div class="flex items-center gap-2 mb-3"><span class="p-1 px-2 rounded-lg text-sm" style="background:${g.color}20">${g.icon} ${g.label}</span></div><div class="space-y-2">`;
+                    html += `<div class="mb-9"><div class="flex items-center gap-2 mb-4 px-1"><span class="text-[11px] font-black text-gray-400 uppercase tracking-widest">${g.icon} ${g.label}</span></div>`;
                     items.forEach(it => {
-                        if (!state.checked[it.name]) totalUnchecked++;
                         html += `
-                            <div onclick="toggleItem('${it.name}')" class="ios-card p-4 flex justify-between items-center ${state.checked[it.name] ? 'opacity-30' : ''}">
-                                <span class="text-sm font-bold ${state.checked[it.name] ? 'line-through' : ''}">${it.name} ${it.count > 1 ? `<span class="text-orange-500 ml-1">x${it.count}</span>` : ''}</span>
-                                <div class="w-5 h-5 border-2 rounded-md ${state.checked[it.name]?'bg-green-500 border-green-500':'border-slate-200'}"></div>
-                            </div>`;
+                        <div onclick="toggleCheck('${it.name}')" class="ios-card p-4.5 flex justify-between items-center mb-2.5 transition-all ${state.checked[it.name] ? 'bg-slate-50 opacity-40' : 'active:scale-95'}">
+                            <span class="text-[15px] font-bold ${state.checked[it.name] ? 'line-through text-gray-400' : ''}">${it.name} ${it.count > 1 ? `<span class="bg-blue-100 text-blue-700 font-extrabold px-2.5 py-1 rounded-full text-[11px] ml-2">x${it.count}</span>` : ''}</span>
+                            <div class="w-7 h-7 border-2 rounded-full flex items-center justify-center transition-all ${state.checked[it.name]?'bg-green-500 border-green-500 shadow-lg shadow-green-500/30':'border-gray-200'}">
+                                ${state.checked[it.name] ? '<span class="text-white text-xs">✓</span>' : ''}
+                            </div>
+                        </div>`;
                     });
-                    html += `</div></div>`;
+                    html += `</div>`;
                 });
-                
-                container.innerHTML = html || '<div class="text-center py-20 opacity-30 italic">La liste est vide.<br>Ajoutez des repas dans la semaine !</div>';
-                const badge = document.getElementById('global-badge');
-                if(totalUnchecked > 0) { badge.innerText = totalUnchecked; badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); }
+                container.innerHTML = html || '<div class="text-center py-20 text-gray-300 font-bold">Liste vide.</div>';
             }
         }
 
-        // 5. ACTIONS
-        function addMeal(id) {
-            const m = id ? state.meals[id] : {name:'', ing:'', cat:'Dîner'};
-            const name = prompt("Nom du repas :", m.name);
-            if(!name) return;
-            const ing = prompt("Ingrédients (séparés par une virgule) :", m.ing);
-            const cat = prompt("Catégorie (Petit-déjeuner, Déjeuner ou Dîner) :", m.cat);
-            const mid = id || db.ref('meals').push().key;
-            db.ref('meals/'+mid).set({ name, ing: ing||'', cat: cat||'Dîner' });
+        function resetWeek() {
+            if(confirm("Effacer le planning et décocher toutes les courses ?")) {
+                db.ref('week').remove();
+                db.ref('checked').remove();
+                db.ref('manualItems').remove();
+            }
         }
-
-        function editBaby(moment) {
-            const val = prompt(`${moment} :`, state.baby[state.currentBaby]?.[moment] || "");
-            if(val !== null) db.ref(`baby/${state.currentBaby}/${moment}`).set(val);
+        function addManualItem() {
+            const input = document.getElementById('new-item');
+            const val = input.value.trim().toLowerCase();
+            if (val) { db.ref(`manualItems/${val}`).set(true); input.value = ""; }
         }
-
-        function toggleItem(name) { db.ref('checked/'+name).set(!state.checked[name]); }
+        function toggleCheck(name) {
+            if (state.checked[name] && state.manualItems[name]) {
+                if(confirm("Supprimer définitivement cet article manuel de la liste ?")) db.ref(`manualItems/${name}`).remove();
+            }
+            db.ref('checked/'+name).set(!state.checked[name]);
+        }
+        function addMeal() {
+            const name = prompt("Nom du plat ou dessert :");
+            if (name) db.ref('meals').push({ name, ing: "" });
+        }
+        function renameMeal(id, old) {
+            const name = prompt("Renommer :", old);
+            if (name) db.ref(`meals/${id}/name`).set(name);
+        }
+        function addIngToMeal(id) {
+            const ing = prompt("Ingrédient :");
+            if (ing) {
+                const current = state.meals[id].ing || "";
+                db.ref(`meals/${id}/ing`).set(current ? `${current}, ${ing.trim()}` : ing.trim());
+            }
+        }
+        function removeIng(id, ing) {
+            const up = state.meals[id].ing.split(',').map(x=>x.trim()).filter(x=>x!==ing).join(', ');
+            db.ref(`meals/${id}/ing`).set(up);
+        }
+        function editBaby(m) {
+            const val = prompt(`${m} :`, state.baby[state.currentBaby]?.[m] || "");
+            if(val !== null) db.ref(`baby/${state.currentBaby}/${m}`).set(val);
+        }
     </script>
 </body>
 </html>
